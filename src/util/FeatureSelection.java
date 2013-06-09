@@ -35,7 +35,7 @@ public class FeatureSelection {
 			// generate new data
 			System.out.println("[FeatureSelection.apply]\tSearching for best features...");
 			Instances reduces_dataset = Filter.useFilter(dataset, filter);
-			System.out.println(reduces_dataset);
+			//System.out.println(reduces_dataset);
 			return reduces_dataset;
 		} catch (Exception e) {
 			System.out.println("[FeatureSelection.apply]: " + e.getMessage());
