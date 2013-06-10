@@ -24,8 +24,8 @@ public class MyClassifier {
 		// Read in true labels of the test dataset
 		List<String> trueLabels = Utility.loadClassValues("test_noclass_rest.arff");
 		Map<String, List<Double>> predictedLabels = new HashMap<String, List<Double>>();
+		Instances emptyLabeledTest = Utility.addClassToTestDataset(unlabeledTest, "dummy");
 		for (Map.Entry<String, Instances> entry : trainDatasets.entrySet()) {
-			Instances emptyLabeledTest = Utility.addClassToTestDataset(unlabeledTest, entry.getKey());
 			System.out.println("Classify " + entry.getKey());
 			predictedLabels.put(entry.getKey(), classify(new J48(), entry.getValue(), emptyLabeledTest));
 		}
