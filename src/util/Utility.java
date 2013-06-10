@@ -109,4 +109,18 @@ public class Utility {
 		labeled.setClassIndex(labeled.numAttributes()-1);
 		return labeled;
 	}
+	
+	public static Instances addClassToTestDataset(Instances unlabeled, String classname){
+		// create copy
+		Instances labeled = new Instances(unlabeled);
+
+		// Add class attribute to the dataset
+		List<String> possibleValues = new ArrayList<String>(
+				Arrays.asList("1", "0"));
+		labeled.insertAttributeAt(new Attribute("class_" + classname, possibleValues), labeled.numAttributes());
+
+		// Set class index
+		labeled.setClassIndex(labeled.numAttributes()-1);
+		return labeled;
+	}
 }
