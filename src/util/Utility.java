@@ -14,7 +14,6 @@ import java.util.Map;
 import weka.core.Attribute;
 import weka.core.Instances;
 import weka.filters.Filter;
-import weka.filters.unsupervised.attribute.Remove;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class Utility {
@@ -30,97 +29,90 @@ public class Utility {
 		Map<String, Instances> trainDatasets = new HashMap<String, Instances>();
 		for (File file : listOfFiles) {
 			if (file.isFile() && !file.getName().endsWith("_rest.arff")) {
-				String abs = file.getAbsolutePath();
-				System.out.println("Loading " + abs);
-				Instances data = Filter.useFilter(loadData(file.getAbsolutePath()), filter);
-
-				trainDatasets.put(file.getName().split("\\.")[0], data);
-				//System.out.println(data);
+				System.out.println("Loading " + file.getAbsolutePath());
+				// Convert to word vector.
+				Instances unlabeledData = Filter.useFilter(loadData(file.getAbsolutePath()), filter);
+				// Put (topic name, unlabeledData) into the map.
+				trainDatasets.put(file.getName().split("\\.")[0], unlabeledData);
+				//System.out.println(unlabeledData);
 			}
 		}
 		return trainDatasets;
 	}
 
-	public static Map<String, Instances> addClassToAllTrainDatasets(File[] listOfFiles, Map<String, Instances> trainDatasets){
-		for (File file : listOfFiles) {
-			if (file.isFile() && file.getName().endsWith("_rest.arff")) {
-				String dataset_name =  file.getName().split("_")[0];
-				addClassToTrainDataset(file.getAbsolutePath(), trainDatasets.get(dataset_name), dataset_name);
-			}
-		}
-		return null;
-	}
-
-	public static List<String> loadClassValues(String filepath){
+	public static List<String> loadLabelFile(String filepath){
 		BufferedReader br = null;
-		List<String> classValues = new ArrayList<String>();
+		List<String> labelValues = new ArrayList<String>();
 		try {
 			br = new BufferedReader(new FileReader(filepath));
 			String strLine;
 			while((strLine = br.readLine())!= null)
 			{
-				classValues.add(strLine.trim());
+				labelValues.add(strLine.trim());
 			}
 			br.close();
 		} catch (FileNotFoundException e) {
-			System.out.println("[Utility.addClassToTrainDataset]: " + e.getMessage());
+			System.out.println("[Utility.loadLabelValues]: " + e.getMessage());
 			e.printStackTrace();
 		}
 		catch (IOException e) {
-			System.out.println("[Utility.addClassToTrainDataset]: " + e.getMessage());
+			System.out.println("[Utility.loadLabelValues]: " + e.getMessage());
 			e.printStackTrace();
 		} 
-		return classValues;
+		return labelValues;
 	}
 
-	public static void addClassToTrainDataset(String filepath, Instances data, String classname){
-		// Read in all class values
-		List<String> classValues = loadClassValues(filepath);
+	public static Map<String, List<Double>> formatTestLabels(List<String> labelsUsed, List<String> testLabels){
+		Map<String, List<Double>> realTestLabels = new HashMap<String, List<Double>>();
 
-		// Add class attribute to the dataset
-		List<String> possibleValues = new ArrayList<String>(
-				Arrays.asList("1", "0"));
-		data.insertAttributeAt(new Attribute("class_" + classname, possibleValues), data.numAttributes());
-
-		// Add class values to the dataset
-		for (int i = 0; i < data.numInstances(); i++) {
-			data.instance(i).setValue(data.numAttributes()-1, classValues.get(i));
+		for(String labelName : labelsUsed){
+			List<Double> binaryLabels = new ArrayList<Double>();
+			for(String instanceLabels : testLabels){
+				if(instanceLabels.contains("not_"+labelName)){
+					binaryLabels.add(0.0);
+				}
+				else{
+					binaryLabels.add(1.0);
+				}
+			}
+			realTestLabels.put(labelName, binaryLabels);
 		}
-		// Set class index
+		return realTestLabels;
+	}
+
+	public static void labelDataset(String filepath, Instances data, String labelName){
+		List<String> labelValues = loadLabelFile(filepath);
+		
+		// Add label attribute/column at the end of the dataset.
+		List<String> possibleValues = new ArrayList<String>(
+				Arrays.asList("1.0", "0.0"));
+		data.insertAttributeAt(new Attribute("label_" + labelName, possibleValues), data.numAttributes());
+
+		// Set label/class index
 		data.setClassIndex(data.numAttributes()-1);
-	}
 
-	public static Instances addClassToTestDataset(List<String> classValues, Instances unlabeled, String classname){
-		// create copy
-		Instances labeled = new Instances(unlabeled);
-
-		// Add class attribute to the dataset
-		List<String> possibleValues = new ArrayList<String>(
-				Arrays.asList("1", "0"));
-		labeled.insertAttributeAt(new Attribute("class_" + classname, possibleValues), labeled.numAttributes());
-
-		// Add class values to the dataset
-		for (int i = 0; i < labeled.numInstances(); i++) {
-			String instanceLabels = classValues.get(i);
-			String value = instanceLabels.contains("not_"+classname)? "0" : "1";
-			labeled.instance(i).setValue(labeled.numAttributes()-1, value);
+		// Add label values to the dataset.
+		for (int i = 0; i < data.numInstances(); i++) {
+			data.instance(i).setClassValue(Double.parseDouble(labelValues.get(i)));
 		}
-		// Set class index
-		labeled.setClassIndex(labeled.numAttributes()-1);
-		return labeled;
 	}
-	
-	public static Instances addClassToTestDataset(Instances unlabeled, String classname){
-		// create copy
+
+	public static Instances labelDataset(List<Double> labelValues, Instances unlabeled, String labelName){
 		Instances labeled = new Instances(unlabeled);
 
-		// Add class attribute to the dataset
+		// Add label attribute/column at the end of the dataset.
 		List<String> possibleValues = new ArrayList<String>(
-				Arrays.asList("1", "0"));
-		labeled.insertAttributeAt(new Attribute("class_" + classname, possibleValues), labeled.numAttributes());
+				Arrays.asList("1.0", "0.0"));
+		labeled.insertAttributeAt(new Attribute("label_" + labelName, possibleValues), labeled.numAttributes());
 
-		// Set class index
+		// Set label/class index
 		labeled.setClassIndex(labeled.numAttributes()-1);
+
+		// Add label values to the dataset.
+		for (int i = 0; i < labeled.numInstances(); i++) {
+			labeled.instance(i).setClassValue(labelValues.get(i));
+		}
+
 		return labeled;
 	}
 }
