@@ -34,7 +34,7 @@ public class Main {
 
 		// Load all training files. The instances in these files are not labelled.
 		//
-		File folder = new File("temp/");
+		File folder = new File("train/");
 		File[] listOfFiles = folder.listFiles();
 		Map<String, Instances> trainDatasets = new HashMap<String, Instances>();
 		for (File file : listOfFiles) {

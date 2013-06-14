@@ -82,6 +82,7 @@ public class MyClassifier {
 			Evaluation eval = new Evaluation(train);
 			eval.evaluateModel(cls, test);
 			System.out.println(eval.toSummaryString("\nResults\n======\n", false));
+			System.out.println(eval.toClassDetailsString("\nClass Details\n======\n"));
 			System.out.println(eval.toMatrixString());
 
 			//			// label instances

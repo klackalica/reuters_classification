@@ -18,13 +18,29 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class Utility {
 
-	public static Instances loadData(String path) throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(path));
+	/**
+	 * Load a dataset from a specified file.
+	 * 
+	 * @param filepath - path to a file
+	 * @return Instances of a dataset
+	 * @throws IOException
+	 */
+	public static Instances loadData(String filepath) throws IOException {
+		BufferedReader reader = new BufferedReader(new FileReader(filepath));
 		Instances data = new Instances(reader);
 		reader.close();
 		return data;
 	}
 
+	/**
+	 * Load all training datasets and convert them into a word vector format.
+	 * 
+	 * @param listOfFiles - Files from which to load datasets
+	 * @param filter - StringToWordVector to use to convert loaded datasets into their word vector representations
+	 * @return Map with (label name, dataset) entries
+	 * @throws IOException
+	 * @throws Exception
+	 */
 	public static Map<String, Instances> loadAllTrainDatasets(File[] listOfFiles, StringToWordVector filter) throws IOException, Exception{
 		Map<String, Instances> trainDatasets = new HashMap<String, Instances>();
 		for (File file : listOfFiles) {
@@ -40,6 +56,12 @@ public class Utility {
 		return trainDatasets;
 	}
 
+	/**
+	 * Load all labels from a specified file.
+	 * 
+	 * @param filepath - path to a file
+	 * @return List of labels
+	 */
 	public static List<String> loadLabelFile(String filepath){
 		BufferedReader br = null;
 		List<String> labelValues = new ArrayList<String>();
@@ -52,16 +74,26 @@ public class Utility {
 			}
 			br.close();
 		} catch (FileNotFoundException e) {
-			System.out.println("[Utility.loadLabelValues]: " + e.getMessage());
+			System.out.println("[Utility.loadLabelFile]: " + e.getMessage());
 			e.printStackTrace();
 		}
 		catch (IOException e) {
-			System.out.println("[Utility.loadLabelValues]: " + e.getMessage());
+			System.out.println("[Utility.loadLabelFile]: " + e.getMessage());
 			e.printStackTrace();
 		} 
 		return labelValues;
 	}
 
+	/**
+	 * Convert true test labels which are loaded from a file into a map representation.
+	 * Map entries are (label name, list of numbers) pairs, where |list of numbers| = #test instances 
+	 * and each list element either has value 0 or 1. 1 indicates that a test instance is labelled with
+	 * the label name, 0 indicates otherwise.
+	 * 
+	 * @param labelsUsed - List of labels being considered in the classification (i.e. 20 most common ones)
+	 * @param testLabels - Test labels in the same format they appear in the file
+	 * @return Map of label names to a binary list of numbers
+	 */
 	public static Map<String, List<Double>> formatTestLabels(List<String> labelsUsed, List<String> testLabels){
 		Map<String, List<Double>> realTestLabels = new HashMap<String, List<Double>>();
 
@@ -80,6 +112,14 @@ public class Utility {
 		return realTestLabels;
 	}
 
+	/**
+	 * Add a label column to the dataset and fill in label values for each instance.
+	 * This method modifies the dataset passed to it.
+	 * 
+	 * @param filepath - File from which to load label values
+	 * @param data - Dataset to add the label column
+	 * @param labelName - name of the label to add (e.g. earn, acq, ship, wheat...)
+	 */
 	public static void labelDataset(String filepath, Instances data, String labelName){
 		List<String> labelValues = loadLabelFile(filepath);
 		
@@ -97,6 +137,16 @@ public class Utility {
 		}
 	}
 
+	/**
+	 * Add a label column to the dataset and fill in label values for each instance.
+	 * This method creates a copy of the passed dataset and adds labels to it.
+	 * Passed dataset remains unchanged.
+	 * 
+	 * @param labelValues - list of label values {0, 1} for each instance
+	 * @param unlabeled  - Dataset to add the label column
+	 * @param labelName - name of the label to add (e.g. earn, acq, ship, wheat...)
+	 * @return Labeled dataset
+	 */
 	public static Instances labelDataset(List<Double> labelValues, Instances unlabeled, String labelName){
 		Instances labeled = new Instances(unlabeled);
 
