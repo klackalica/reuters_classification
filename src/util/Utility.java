@@ -31,6 +31,30 @@ public class Utility {
 		reader.close();
 		return data;
 	}
+	
+	public static Map<String, Instances> loadAllDatasets(String folderName, StringToWordVector filter){
+		System.out.println("[Utility.loadAllDatasets]\tLoading all datasets in " + folderName + " folder.");
+		File folder = new File(folderName);
+		File[] listOfFiles = folder.listFiles();
+		Map<String, Instances> trainDatasets = new HashMap<String, Instances>();
+		for (File file : listOfFiles) {
+			if (file.isFile() && !file.getName().endsWith("_rest.arff")) {
+				Instances unlabeledData = null;
+				try {
+					// Load data and convert to word vector.
+					unlabeledData = Filter.useFilter(
+							Utility.loadData(file.getAbsolutePath()), filter);
+				} catch (IOException e) {
+					System.out.println("[Utility.loadAllDatasets]: " + e.getMessage());
+				} catch (Exception e) {
+					System.out.println("[Utility.loadAllDatasets]: " + e.getMessage());
+				}
+				// Put (topic name, unlabeledData) into the map.
+				trainDatasets.put(file.getName().split("\\.")[0], unlabeledData);	
+			}
+		}
+		return trainDatasets;
+	}
 
 	/**
 	 * Load all training datasets and convert them into a word vector format.
@@ -136,6 +160,18 @@ public class Utility {
 			data.instance(i).setClassValue(Double.parseDouble(labelValues.get(i)));
 		}
 	}
+	
+	public static void labelAllDatasets(String folderName, Map<String, Instances> datasets){
+		System.out.println("[Utility.labelAllDatasets]\tLabeling all datasets with label info in " + folderName + " folder.");
+		File folder = new File(folderName);
+		File[] listOfFiles = folder.listFiles();
+		for (File file : listOfFiles) {
+			if (file.isFile() && file.getName().endsWith("_rest.arff")) {
+				String labelName =  file.getName().split("_")[0];
+				Utility.labelDataset(file.getAbsolutePath(), datasets.get(labelName), labelName);
+			}
+		}
+	}
 
 	/**
 	 * Add a label column to the dataset and fill in label values for each instance.
@@ -164,5 +200,42 @@ public class Utility {
 		}
 
 		return labeled;
+	}
+	
+	public static double[] calcPrecisionRecall(Map<String, List<Double>> trueLabels, Map<String, List<Double>> predictedLabels){
+		int numInstances = trueLabels.get("earn").size();
+		double sumP = 0;
+		double sumR = 0;
+		
+		for(int i = 0; i < numInstances; i++){
+			int correctlyPredicted = 0;
+			double numPredicted = 0;
+			double numActual = 0;
+			double trueLab = 0;
+			double predictedLab = 0;
+			String labelName = null;
+			
+			for(Map.Entry<String, List<Double>> e : trueLabels.entrySet()){
+				labelName = e.getKey();
+				trueLab = e.getValue().get(i);		// true label value of instance i for labelName
+				predictedLab = predictedLabels.get(labelName).get(i);
+				if(trueLab == 1.0){
+					numActual++;
+					if(trueLab == predictedLab){
+						correctlyPredicted++;
+					}
+				}
+				if(predictedLab == 1.0){
+					numPredicted++;
+				}
+			}
+			if(numActual != 0){
+				sumP += correctlyPredicted / numActual;
+			}
+			if(numPredicted != 0){
+				sumP += correctlyPredicted / numPredicted;
+			}
+		}
+		return new double[]{sumP/numInstances, sumR/numInstances};
 	}
 }
