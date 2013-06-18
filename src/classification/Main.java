@@ -21,23 +21,23 @@ public class Main {
 					"veg-oil", "soybean", "livestock"));
 
 	public static void main(String[] args) throws Exception {
-//		int fsMethod = Integer.parseInt(args[0]);
-//		String clsMethod = args[1];
-//		int wordsToKeep = Integer.parseInt(args[2]);
-//		int numToSelect = Integer.parseInt(args[3]);
-//		Utility.filename = args[4];
-		int fsMethod = 0;
-		String clsMethod = "NB";
-		int wordsToKeep = 5000;
-		int numToSelect = 500;
-		Utility.filename = "test.txt";
+		int fsMethod = Integer.parseInt(args[0]);
+		String clsMethod = args[1];
+		int wordsToKeep = Integer.parseInt(args[2]);
+		int numToSelect = Integer.parseInt(args[3]);
+		Utility.filename = args[4];
+//		int fsMethod = 0;
+//		String clsMethod = "NB";
+//		int wordsToKeep = 5000;
+//		int numToSelect = 500;
+//		Utility.filename = "test.txt";
 		Utility.ensureFileExists();
 		
 		System.out.println("fsMethod " + fsMethod 
 				+ "\nclsMethod " 
 				+ clsMethod + "\nwordsToKeep " 
 				+ wordsToKeep + "\nnumToSelect " 
-				+ numToSelect + "\noutfile " + "test.txt");
+				+ numToSelect + "\noutfile " + args[4]);
 		
 		long startTime = System.currentTimeMillis();
 		
