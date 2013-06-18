@@ -1,11 +1,11 @@
 package classification;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import util.DatasetHelper;
 import util.Utility;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
@@ -15,40 +15,72 @@ import weka.classifiers.trees.J48;
 import weka.core.Instances;
 
 public class MyClassifier {
+	
+	private String clsMethod;
+	
+	public MyClassifier(String clsMethod){
+		this.clsMethod = clsMethod;
+	}
 
-	public Map<String, List<Double>> classifyDecisionTree(Map<String, Instances> trainDatasets, Instances unlabeledTest, Map<String, List<Double>> testLabels){
+	public Map<String, List<Double>> classify(Map<String, Instances> trainDatasets, Instances unlabeledTest, Map<String, List<Double>> testLabels){
+		if(clsMethod.equals("DT")){
+			return classifyDecisionTree(trainDatasets, unlabeledTest, testLabels);
+		}
+		else if(clsMethod.equals("NB")){
+			return classifyNaiveBayes(trainDatasets, unlabeledTest, testLabels);
+		}
+		else{
+			return classifyKNN(trainDatasets, unlabeledTest, testLabels);
+		}
+	}
+	
+	private Map<String, List<Double>> classifyDecisionTree(Map<String, Instances> trainDatasets, Instances unlabeledTest, Map<String, List<Double>> testLabels){
 		Map<String, List<Double>> predictedTestLabels = new HashMap<String, List<Double>>();
 		for (Map.Entry<String, Instances> entry : trainDatasets.entrySet()) {
 			String labelName = entry.getKey();
-			Instances labeledTest = Utility.labelDataset(testLabels.get(labelName), unlabeledTest, labelName);
+			Instances labeledTest = DatasetHelper.labelDataset(testLabels.get(labelName), unlabeledTest, labelName);
 			int pos = 0;
 			for(int i = 0; i < labeledTest.numInstances(); i++){
 				if(labeledTest.instance(i).classValue() == 1.0) pos++;
 			}
 			System.out.println(labelName + "\t pos = " + pos);
-			//classify(new J48(), entry.getValue(), labeledTest);
 			System.out.println("[MyClassifier.classifyDecisionTree]\tClassifying " + labelName + "...");
+			Utility.outputToFile(labelName + "\t pos = " + pos + "\n" + "[MyClassifier.classifyDecisionTree]\tClassifying " + labelName + "...");
 			predictedTestLabels.put(labelName, classify(new J48(), entry.getValue(), labeledTest, labelName));
 		}
 		return predictedTestLabels;
 	}
 
 
-	public Map<String, List<Double>> classifyNaiveBayes(Map<String, Instances> trainDatasets, Instances unlabeledTest, Map<String, List<Double>> testLabels){
+	private Map<String, List<Double>> classifyNaiveBayes(Map<String, Instances> trainDatasets, Instances unlabeledTest, Map<String, List<Double>> testLabels){
 		Map<String, List<Double>> predictedTestLabels = new HashMap<String, List<Double>>();
 		for (Map.Entry<String, Instances> entry : trainDatasets.entrySet()) {
 			String labelName = entry.getKey();
-			Instances labeledTest = Utility.labelDataset(testLabels.get(labelName), unlabeledTest, labelName);
+			Instances labeledTest = DatasetHelper.labelDataset(testLabels.get(labelName), unlabeledTest, labelName);
+			int pos = 0;
+			for(int i = 0; i < labeledTest.numInstances(); i++){
+				if(labeledTest.instance(i).classValue() == 1.0) pos++;
+			}
+			System.out.println(labelName + "\t pos = " + pos);
+			System.out.println("[MyClassifier.classifyNaiveBayes]\tClassifying " + labelName + "...");
+			Utility.outputToFile(labelName + "\t pos = " + pos + "\n" + "[MyClassifier.classifyNaiveBayes]\tClassifying " + labelName + "...");
 			predictedTestLabels.put(labelName, classify(new NaiveBayes(), entry.getValue(), labeledTest, labelName));
 		}
 		return predictedTestLabels;
 	}
 
-	public Map<String, List<Double>> classifyKNN(Map<String, Instances> trainDatasets, Instances unlabeledTest, Map<String, List<Double>> testLabels){
+	private Map<String, List<Double>> classifyKNN(Map<String, Instances> trainDatasets, Instances unlabeledTest, Map<String, List<Double>> testLabels){
 		Map<String, List<Double>> predictedTestLabels = new HashMap<String, List<Double>>();
 		for (Map.Entry<String, Instances> entry : trainDatasets.entrySet()) {
 			String labelName = entry.getKey();
-			Instances labeledTest = Utility.labelDataset(testLabels.get(labelName), unlabeledTest, labelName);
+			Instances labeledTest = DatasetHelper.labelDataset(testLabels.get(labelName), unlabeledTest, labelName);
+			int pos = 0;
+			for(int i = 0; i < labeledTest.numInstances(); i++){
+				if(labeledTest.instance(i).classValue() == 1.0) pos++;
+			}
+			System.out.println(labelName + "\t pos = " + pos);
+			System.out.println("[MyClassifier.classifyKNN]\tClassifying " + labelName + "...");
+			Utility.outputToFile(labelName + "\t pos = " + pos + "\n" + "[MyClassifier.classifyKNN]\tClassifying " + labelName + "...");
 			predictedTestLabels.put(labelName, classify(new IBk(5), entry.getValue(), labeledTest, labelName));
 		}
 		return predictedTestLabels;
@@ -70,7 +102,7 @@ public class MyClassifier {
 		}
 		return null;
 	}
-
+/*
 	private List<Double> classify(Classifier cls, Instances train, Instances test){
 		List<Double> labels = new ArrayList<Double>();
 		try {
@@ -87,5 +119,5 @@ public class MyClassifier {
 		}
 		return labels;
 	}
-
+*/
 }
