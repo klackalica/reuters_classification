@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import util.DatasetHelper;
+import util.FeatureSelection;
 import util.Utility;
 import weka.classifiers.Classifier;
-import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.trees.J48;
@@ -17,9 +17,11 @@ import weka.core.Instances;
 public class MyClassifier {
 	
 	private String clsMethod;
+	private FeatureSelection fs;
 	
-	public MyClassifier(String clsMethod){
+	public MyClassifier(String clsMethod, FeatureSelection fs){
 		this.clsMethod = clsMethod;
+		this.fs = fs;
 	}
 
 	public Map<String, List<Double>> classify(Map<String, Instances> trainDatasets, Instances unlabeledTest, Map<String, List<Double>> testLabels){
@@ -86,14 +88,18 @@ public class MyClassifier {
 		return predictedTestLabels;
 	}
 	
-	private List<Double> classify(Classifier cls, Instances train, Instances unlabeledTest, String labelName){
+	private List<Double> classify(Classifier cls, Instances train, Instances test, String labelName){
+		if(fs != null){
+			test = fs.filterOutAttributes(test);
+			System.out.println("TEST class index = " + test.classIndex());
+		}
 		try {
 			cls.buildClassifier(train);
 
 			// Predict labels
 			List<Double> labels = new ArrayList<Double>();
-			for (int i = 0; i < unlabeledTest.numInstances(); i++) {
-				double predicted = cls.classifyInstance(unlabeledTest.instance(i));
+			for (int i = 0; i < test.numInstances(); i++) {
+				double predicted = cls.classifyInstance(test.instance(i));
 				labels.add(predicted);
 			}
 			return labels;

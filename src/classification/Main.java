@@ -26,7 +26,7 @@ public class Main {
 		int wordsToKeep = Integer.parseInt(args[2]);
 		int numToSelect = Integer.parseInt(args[3]);
 		Utility.filename = args[4];
-//		int fsMethod = 0;
+//		int fsMethod = 2;
 //		String clsMethod = "NB";
 //		int wordsToKeep = 5000;
 //		int numToSelect = 500;
@@ -53,8 +53,9 @@ public class Main {
 		DatasetHelper.labelAllDatasets("train/", trainDatasets);
 		
 		// Perform feature selection
+		FeatureSelection fs = null;
 		if(fsMethod != 0){
-			FeatureSelection fs = new FeatureSelection(fsMethod, numToSelect);
+			fs = new FeatureSelection(fsMethod, numToSelect);
 			fs.selectAttributes();
 
 			// Keep only selected features in the training datasets.
@@ -73,7 +74,7 @@ public class Main {
 		List<String> testLabelsFromFile = DatasetHelper.loadLabelFile("test_noclass_rest.arff");
 		Map<String, List<Double>> testLabels = DatasetHelper.formatTestLabels(labelsUsed, testLabelsFromFile);
 
-		MyClassifier myClassifier = new MyClassifier(clsMethod);
+		MyClassifier myClassifier = new MyClassifier(clsMethod, fs);
 		Map<String, List<Double>> predictedLabels = myClassifier.classify(trainDatasets, unlabeledTest, testLabels);
 		
 		double[] PR = Utility.calcPrecisionRecall(testLabels, predictedLabels);

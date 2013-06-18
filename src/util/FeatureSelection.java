@@ -21,7 +21,7 @@ public class FeatureSelection {
 	private ASEvaluation eval;
 	private ASSearch search;
 	private int numToSelect;
-	
+
 	public FeatureSelection(int fsMethod, int num){
 		numToSelect = num;
 		if(fsMethod == 1){
@@ -34,7 +34,7 @@ public class FeatureSelection {
 			GainRatioRanker();
 		}
 	}
-	
+
 	public void CfsSubsetGreedyStepwise(){
 		CfsSubsetEval eval = new CfsSubsetEval();
 		GreedyStepwise search = new GreedyStepwise();
@@ -42,7 +42,7 @@ public class FeatureSelection {
 		this.search = search;
 		this.eval = eval;
 	}
-	
+
 	public void CfsSubsetBestFirst(){
 		CfsSubsetEval eval = new CfsSubsetEval();
 		BestFirst search = new BestFirst();
@@ -60,7 +60,7 @@ public class FeatureSelection {
 
 	public void selectAttributes(){
 		fsOnOriginalTrain();
-		
+
 		weka.attributeSelection.AttributeSelection attsel = new weka.attributeSelection.AttributeSelection();  // package weka.attributeSelection!
 		attsel.setEvaluator(eval);
 		attsel.setSearch(search);
@@ -70,7 +70,7 @@ public class FeatureSelection {
 			String fsResults = attsel.toResultsString();
 			Utility.outputToFile(fsResults);
 			System.out.println(fsResults);
-			
+
 			selectedAttributes = attsel.selectedAttributes();		// obtain the attribute indices that were selected
 			Utility.outputToFile("\nNumber attributes selected: " + attsel.numberAttributesSelected());
 			System.out.println("\nNumber attributes selected: " + attsel.numberAttributesSelected());
@@ -78,21 +78,18 @@ public class FeatureSelection {
 			System.out.println("[FeatureSelection.selectAttributes]: " + e.getMessage());
 		}
 	}
-	
+
 	public Instances filterOutAttributes(Instances dataset){
 		// Keep the class attribute
 		int[] copy = new int[selectedAttributes.length + 1];
 		System.arraycopy( selectedAttributes, 0, copy, 0, selectedAttributes.length );
 		copy[copy.length - 1] = dataset.classIndex();
-		System.out.println(dataset);
 		Remove remove = new Remove();						// new instance of filter
 		try {
 			remove.setAttributeIndicesArray(copy);
 			remove.setInvertSelection(true);
 			remove.setInputFormat(dataset);					// inform filter about dataset **AFTER** setting options
 			Instances fltr = Filter.useFilter(dataset, remove);		// apply filter
-			// set class index!!
-			//
 			return fltr;
 		} catch (Exception e) {
 			System.out.println("[FeatureSelection.filterOutAttributes]: " + e.getMessage());
@@ -114,6 +111,6 @@ public class FeatureSelection {
 		} catch (Exception e) {
 			System.out.println("[FeatureSelection.fsOnOriginalTrain]: " + e.getMessage());
 		}
-		
+
 	}
 }
