@@ -18,7 +18,13 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class DatasetHelper {
 	
-	public static int wordsToKeep = 5000;
+	private int wordsToKeep = 5000;
+	private List<String> binaryValues = new ArrayList<String>(
+			Arrays.asList("1.0", "0.0"));
+	
+	public DatasetHelper(int wordsToKeep){
+		this.wordsToKeep = wordsToKeep;
+	}
 	/**
 	 * Load a dataset from a specified file.
 	 * 
@@ -26,7 +32,7 @@ public class DatasetHelper {
 	 * @return Instances of a dataset
 	 * @throws IOException
 	 */
-	public static Instances loadData(String filepath) throws IOException {
+	public Instances loadData(String filepath) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(filepath));
 		Instances data = new Instances(reader);
 		reader.close();
@@ -39,8 +45,8 @@ public class DatasetHelper {
 	 * @param filter - StringToWordVector to use to convert loaded datasets into their word vector representations
 	 * @return Map with (label name, dataset) entries
 	 */
-	public static Map<String, Instances> loadAllDatasets(String folderName, StringToWordVector filter){
-		System.out.println("[Utility.loadAllDatasets]\tLoading all datasets in " + folderName + " folder.");
+	public Map<String, Instances> loadAllDatasets(String folderName, StringToWordVector filter){
+		System.out.println("Loading all datasets in " + folderName + " folder.");
 		File folder = new File(folderName);
 		File[] listOfFiles = folder.listFiles();
 		Map<String, Instances> trainDatasets = new HashMap<String, Instances>();
@@ -56,8 +62,10 @@ public class DatasetHelper {
 				} catch (Exception e) {
 					System.out.println("[Utility.loadAllDatasets]: " + e.getMessage());
 				}
-				// Put (topic name, unlabeledData) into the map.
-				trainDatasets.put(file.getName().split("\\.")[0], unlabeledData);	
+				// Put (label name, unlabeledData) into the map.
+				String labelName = file.getName().split("\\.")[0];
+				unlabeledData.setRelationName(labelName);
+				trainDatasets.put(labelName, unlabeledData);	
 			}
 		}
 		return trainDatasets;
@@ -69,7 +77,7 @@ public class DatasetHelper {
 	 * @param filepath - path to a file
 	 * @return List of labels
 	 */
-	public static List<String> loadLabelFile(String filepath){
+	public List<String> loadLabelFile(String filepath){
 		BufferedReader br = null;
 		List<String> labelValues = new ArrayList<String>();
 		try {
@@ -81,11 +89,11 @@ public class DatasetHelper {
 			}
 			br.close();
 		} catch (FileNotFoundException e) {
-			System.out.println("[Utility.loadLabelFile]: " + e.getMessage());
+			System.err.println("[DatasetHelper.loadLabelFile]: " + e.getMessage());
 			e.printStackTrace();
 		}
 		catch (IOException e) {
-			System.out.println("[Utility.loadLabelFile]: " + e.getMessage());
+			System.err.println("[DatasetHelper.loadLabelFile]: " + e.getMessage());
 			e.printStackTrace();
 		} 
 		return labelValues;
@@ -101,7 +109,7 @@ public class DatasetHelper {
 	 * @param testLabels - Test labels in the same format they appear in the file
 	 * @return Map of label names to a binary list of numbers
 	 */
-	public static Map<String, List<Double>> formatTestLabels(List<String> labelsUsed, List<String> testLabels){
+	public Map<String, List<Double>> formatTestLabels(List<String> labelsUsed, List<String> testLabels){
 		Map<String, List<Double>> realTestLabels = new HashMap<String, List<Double>>();
 
 		for(String labelName : labelsUsed){
@@ -127,38 +135,39 @@ public class DatasetHelper {
 	 * @param data - Dataset to add the label column
 	 * @param labelName - name of the label to add (e.g. earn, acq, ship, wheat...)
 	 */
-	public static void labelDataset(String filepath, Instances data, String labelName){
+	public void labelDataset(String filepath, Instances data, String labelName, List<String> possibleValues){
 		List<String> labelValues = loadLabelFile(filepath);
 		
 		// Add label attribute/column at the end of the dataset.
-		List<String> possibleValues = new ArrayList<String>(
-				Arrays.asList("1.0", "0.0"));
-		data.insertAttributeAt(new Attribute("label_" + labelName, possibleValues), data.numAttributes());
+		data.insertAttributeAt(new Attribute("class-attr", possibleValues), data.numAttributes());
 
 		// Set label/class index
 		data.setClassIndex(data.numAttributes()-1);
 
+		// Is it double or string
+		boolean isDouble = possibleValues.size() == 2;
 		// Add label values to the dataset.
 		for (int i = 0; i < data.numInstances(); i++) {
-			data.instance(i).setClassValue(Double.parseDouble(labelValues.get(i)));
+			if (isDouble) data.instance(i).setClassValue(Double.parseDouble(labelValues.get(i)));
+			else data.instance(i).setClassValue(labelValues.get(i));
 		}
 	}
 	
-	public static void labelAllDatasets(String folderName, Map<String, Instances> datasets){
-		System.out.println("[Utility.labelAllDatasets]\tLabeling all datasets with label info in " + folderName + " folder.");
+	public void labelAllDatasets(String folderName, Map<String, Instances> datasets){
+		System.out.println("Labeling all datasets with label info in " + folderName + " folder.");
 		File folder = new File(folderName);
 		File[] listOfFiles = folder.listFiles();
 		for (File file : listOfFiles) {
 			if (file.isFile() && file.getName().endsWith("_rest.arff")) {
 				String labelName =  file.getName().split("_")[0];
-				labelDataset(file.getAbsolutePath(), datasets.get(labelName), labelName);
+				labelDataset(file.getAbsolutePath(), datasets.get(labelName), labelName, binaryValues);
 			}
 		}
 	}
 
 	/**
 	 * Add a label column to the dataset and fill in label values for each instance.
-	 * This method creates a copy of the passed dataset and adds labels to it.
+	 * This method creates a copy of the passed dataset and adds label to it.
 	 * Passed dataset remains unchanged.
 	 * 
 	 * @param labelValues - list of label values {0, 1} for each instance
@@ -166,13 +175,13 @@ public class DatasetHelper {
 	 * @param labelName - name of the label to add (e.g. earn, acq, ship, wheat...)
 	 * @return Labeled dataset
 	 */
-	public static Instances labelDataset(List<Double> labelValues, Instances unlabeled, String labelName){
+	public Instances labelDataset(List<Double> labelValues, Instances unlabeled, String labelName){
 		Instances labeled = new Instances(unlabeled);
 		
 		// Add label attribute/column at the end of the dataset.
 		List<String> possibleValues = new ArrayList<String>(
 				Arrays.asList("1.0", "0.0"));
-		labeled.insertAttributeAt(new Attribute("label_" + labelName, possibleValues), labeled.numAttributes());
+		labeled.insertAttributeAt(new Attribute("class-attr", possibleValues), labeled.numAttributes());
 
 		// Set label/class index
 		labeled.setClassIndex(labeled.numAttributes()-1);
@@ -185,7 +194,7 @@ public class DatasetHelper {
 		return labeled;
 	}
 
-	public static StringToWordVector createWordVectorFilter(Instances data){
+	public StringToWordVector createWordVectorFilter(Instances data){
 		try {
 			StringToWordVector filter = new StringToWordVector();
 			filter.setLowerCaseTokens(true);
@@ -194,13 +203,12 @@ public class DatasetHelper {
 			filter.setInputFormat(data);
 			return filter;
 		} catch (IOException e) {
-			System.out.println("[DatasetHelper.createWordVectorFilter]: " + e.getMessage());
+			System.err.println("[DatasetHelper.createWordVectorFilter]: " + e.getMessage());
 			return null;
 		}
 		catch (Exception e) {
-			System.out.println("[DatasetHelper.createWordVectorFilter]: " + e.getMessage());
+			System.err.println("[DatasetHelper.createWordVectorFilter]: " + e.getMessage());
 			return null;
-		}
-		
+		}	
 	}
 }

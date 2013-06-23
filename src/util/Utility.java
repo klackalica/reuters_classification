@@ -16,6 +16,7 @@ public class Utility {
 		int numInstances = trueLabels.get("earn").size();
 		double sumP = 0;
 		double sumR = 0;
+		double sumF = 0;
 
 		for(int i = 0; i < numInstances; i++){
 			int correctlyPredicted = 0;
@@ -45,8 +46,11 @@ public class Utility {
 			if(numPredicted != 0){
 				sumR += correctlyPredicted / numPredicted;
 			}
+			if((numActual + numPredicted) != 0){ 
+				sumF += (2*correctlyPredicted)/(numActual + numPredicted);
+			}
 		}
-		return new double[]{sumP/numInstances, sumR/numInstances};
+		return new double[]{sumP/numInstances, sumR/numInstances, sumF/numInstances};
 	}
 
 	public static void outputToFile(String text){
@@ -55,13 +59,14 @@ public class Utility {
 			out.println(text);
 			out.close();
 		} catch (IOException e) {
-			System.out.println("[Utility.outputToFile]: " + e.getMessage());
+			System.err.println("[Utility.outputToFile]: " + e.getMessage());
 		}
 	}
 	
+	/**
+	 * Ensure that the output file exist.
+	 */
 	public static void ensureFileExists() {
-		// Ensure that the output file exist.
-		//
 		File file = new File(filename);
 		if (!file.exists()) {
 			try {
