@@ -1,5 +1,7 @@
 package classification;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,6 +40,11 @@ public class Layer {
 	private DatasetHelper dh = null;
 	private Map<String, Classifier> classifiers = new HashMap<String, Classifier>(); 
 
+	public Layer(String clsMethod, DatasetHelper dh){
+		this.clsMethod = clsMethod;
+		this.dh = dh;
+	}
+	
 	public Layer(String clsMethod, DatasetHelper dh, Instances originalTrain){
 		this.clsMethod = clsMethod;
 		this.dh = dh;
@@ -58,17 +65,55 @@ public class Layer {
 	 * @param folderPath - folder containing dataset files to be loaded
 	 */
 	public void loadTrain(String folderPath, StringToWordVector filter){
-		train = dh.loadAllDatasets(folderPath, filter);
+		Map<String, Instances> rawTrain = dh.loadAllDatasets(folderPath);
+		train = dh.toWordVector(rawTrain, filter);
 		dh.labelAllDatasets(folderPath, train);
-		for(Instances i : train.values()){
-			System.out.println(i.relationName() + ": " + i.numAttributes());
-		}
+	}
+	
+	public void loadTrain(String folderPath){
+		System.out.println("Loading all datasets in " + folderPath + " folder.");
+		train = dh.loadAllDatasets(folderPath);
+		dh.labelAllDatasets(folderPath, train);
+//		File folder = new File(folderPath);
+//		File[] listOfFiles = folder.listFiles();
+//		train = new HashMap<String, Instances>();
+//		for (File file : listOfFiles) {
+//			if (file.isFile()) {
+//				Instances data = null;
+//				try {
+//					// Load data
+//					data = dh.loadData(file.getAbsolutePath());
+//				} catch (IOException e) {
+//					System.out.println("[Utility.loadAllDatasets]: " + e.getMessage());
+//				} catch (Exception e) {
+//					System.out.println("[Utility.loadAllDatasets]: " + e.getMessage());
+//				}
+//				// Put (label name, unlabeledData) into the map.
+//				String labelName = file.getName().split("\\.")[0];
+//				data.setRelationName(labelName);
+//				data.setClassIndex(data.numAttributes()-1);
+//				train.put(labelName, data);	
+//			}
+//		}
 	}
 
 	public void loadTest(String featuresFilepath, String labelsFilepath, StringToWordVector filter){
 		// Load test dataset. So far, it's unlabelled.
 		try {
 			unlabeledTest = Filter.useFilter(dh.loadData(featuresFilepath), filter);
+			// Load true labels of the test dataset from a file and transform them into a map representation
+			// where each entry is (label name, binary list of label values of each test instance).
+			List<String> testLabelsFromFile = dh.loadLabelFile(labelsFilepath);
+			testLabels = dh.formatTestLabels(labelsUsed, testLabelsFromFile);
+		} catch (Exception e) {
+			System.err.println("[Layer.loadTest] Error: " + e.getMessage());
+		}
+	}
+	
+	public void loadTest(String featuresFilepath, String labelsFilepath){
+		// Load test dataset. So far, it's unlabelled.
+		try {
+			unlabeledTest = dh.loadData(featuresFilepath);
 			// Load true labels of the test dataset from a file and transform them into a map representation
 			// where each entry is (label name, binary list of label values of each test instance).
 			List<String> testLabelsFromFile = dh.loadLabelFile(labelsFilepath);
@@ -87,7 +132,7 @@ public class Layer {
 			train = fs.selectFeatures(train, originalTrain);
 		}
 		trainClassifiers();
-		crossValidateAll();
+		//crossValidateAll();
 	}
 
 	public void trainClassifiers(){
@@ -179,9 +224,98 @@ public class Layer {
 			System.out.println("\n" + labelName + "\t pos = " + pos);
 			System.out.println("Classifying " + labelName + "...");
 			Utility.outputToFile("\n" + labelName + "\t pos = " + pos + "\n" + "Classifying " + labelName + "...");
-			predictedLabels.put(labelName, myCls.classify(entry.getValue(), labeledTest));
+			predictedLabels.put(labelName, myCls.classify(classifiers.get(labelName), labeledTest));
 		}
 		
 		return Utility.calcPrecisionRecall(testLabels, predictedLabels);
+	}
+	
+	public void savePredictionsInTrainFormat(String folder){
+		List<List<Integer>> outInstances = new ArrayList<List<Integer>>();
+		// Initialise outInstances. Size is the number of instances that were in test set.
+		// Each list element is a list of predicted values {0,1} for all 20 used labels.
+		for(int i = 0; i < predictedLabels.get("earn").size(); i++){
+			outInstances.add(new ArrayList<Integer>());
+		}
+		System.out.println("outInstances.size() " + outInstances.size());
+	
+		for(String labelName : labelsUsed){
+			List<Double> labelPredictions = predictedLabels.get(labelName);
+			for(int i = 0; i < labelPredictions.size(); i++){
+				outInstances.get(i).add(labelPredictions.get(i).intValue());
+			}
+		}
+		
+		// Now label outInstances with true class values of all 20 labels
+		// and write all 20 datasets to 20 different files.
+		// These files serve as training data for layer 2.
+		StringBuilder attributesHeader = new StringBuilder();
+		for(String labelName : labelsUsed){
+			attributesHeader.append("@ATTRIBUTE " + labelName + " {0,1}\n");
+		}
+		
+		for(String labelName : labelsUsed){
+			System.out.println("Building arff for " + labelName);
+			StringBuilder arff = new StringBuilder();
+			arff.append("@RELATION " + labelName + "\n");
+			arff.append(attributesHeader.toString());
+			//arff.append("@ATTRIBUTE " + labelName + "_label {0,1}\n");
+			arff.append("@DATA\n");
+			
+			List<Double> trueLabelValues = testLabels.get(labelName);
+			String line;
+			for(int i = 0; i < trueLabelValues.size(); i++){
+				line = outInstances.get(i).toString();
+				//arff.append(line.substring(1, line.length()-1) + ", " + trueLabelValues.get(i).intValue() + "\n");
+				arff.append(line.substring(1, line.length()-1) + "\n");
+			}
+			//System.out.println(arff.toString());
+			Utility.ensureFileExists(folder + labelName+".arff");
+			Utility.ensureFileExists(folder + labelName+"_rest.arff");
+			Utility.toArffFile(arff.toString(), folder + labelName+".arff");
+			
+			StringBuilder lb = new StringBuilder();
+			for(double d : trueLabelValues){
+				lb.append(d + "\n");
+			}
+			Utility.toLabelFile(lb.toString(), folder + labelName+"_rest.arff");
+		}
+	}
+	
+	public void savePredictionsInTestFormat(String folder){
+		List<List<Integer>> outInstances = new ArrayList<List<Integer>>();
+		// Initialise outInstances. Size is the number of instances that were in test set.
+		// Each list element is a list of predicted values {0,1} for all 20 used labels.
+		for(int i = 0; i < predictedLabels.get("earn").size(); i++){
+			outInstances.add(new ArrayList<Integer>());
+		}
+		System.out.println("outInstances.size() " + outInstances.size());
+	
+		for(String labelName : labelsUsed){
+			List<Double> labelPredictions = predictedLabels.get(labelName);
+			for(int i = 0; i < labelPredictions.size(); i++){
+				outInstances.get(i).add(labelPredictions.get(i).intValue());
+			}
+		}
+
+		StringBuilder attributesHeader = new StringBuilder();
+		for(String labelName : labelsUsed){
+			attributesHeader.append("@ATTRIBUTE " + labelName + " {0,1}\n");
+		}
+		
+		// Features part
+		StringBuilder arff = new StringBuilder();
+		arff.append("@RELATION reuters\n");
+		arff.append(attributesHeader.toString());
+		//arff.append("@ATTRIBUTE " + labelName + "_label {0,1}\n");
+		arff.append("@DATA\n");
+		
+		String line;
+		for(int i = 0; i < outInstances.size(); i++){
+			line = outInstances.get(i).toString();
+			arff.append(line.substring(1, line.length()-1)+"\n");
+		}
+		
+		Utility.toArffFile(arff.toString(), folder + "l2test.arff");
 	}
 }

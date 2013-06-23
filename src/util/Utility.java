@@ -63,11 +63,31 @@ public class Utility {
 		}
 	}
 	
+	public static void toArffFile(String text, String fname){
+		try {
+			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(fname)));
+			out.println(text);
+			out.close();
+		} catch (IOException e) {
+			System.err.println("[Utility.outputToFile]: " + e.getMessage());
+		}
+	}
+	
+	public static void toLabelFile(String labels, String fname){
+		try {
+			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(fname)));
+			out.println(labels);
+			out.close();
+		} catch (IOException e) {
+			System.err.println("[Utility.outputToFile]: " + e.getMessage());
+		}
+	}
+	
 	/**
 	 * Ensure that the output file exist.
 	 */
-	public static void ensureFileExists() {
-		File file = new File(filename);
+	public static void ensureFileExists(String fname) {
+		File file = new File(fname);
 		if (!file.exists()) {
 			try {
 				file.createNewFile();

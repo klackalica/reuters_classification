@@ -42,31 +42,43 @@ public class DatasetHelper {
 	/**
 	 * 
 	 * @param folderName - Folder containing files from which to load datasets
-	 * @param filter - StringToWordVector to use to convert loaded datasets into their word vector representations
 	 * @return Map with (label name, dataset) entries
 	 */
-	public Map<String, Instances> loadAllDatasets(String folderName, StringToWordVector filter){
+	public Map<String, Instances> loadAllDatasets(String folderName){
 		System.out.println("Loading all datasets in " + folderName + " folder.");
 		File folder = new File(folderName);
 		File[] listOfFiles = folder.listFiles();
-		Map<String, Instances> trainDatasets = new HashMap<String, Instances>();
+		Map<String, Instances> rawTrainDatasets = new HashMap<String, Instances>();
 		for (File file : listOfFiles) {
 			if (file.isFile() && !file.getName().endsWith("_rest.arff")) {
 				Instances unlabeledData = null;
 				try {
-					// Load data and convert to word vector.
-					unlabeledData = Filter.useFilter(
-							loadData(file.getAbsolutePath()), filter);
+					// Load data.
+					unlabeledData = loadData(file.getAbsolutePath());
 				} catch (IOException e) {
-					System.out.println("[Utility.loadAllDatasets]: " + e.getMessage());
+					System.err.println("[Utility.loadAllDatasets]: " + e.getMessage());
 				} catch (Exception e) {
-					System.out.println("[Utility.loadAllDatasets]: " + e.getMessage());
+					System.err.println("[Utility.loadAllDatasets]: " + e.getMessage());
 				}
 				// Put (label name, unlabeledData) into the map.
 				String labelName = file.getName().split("\\.")[0];
 				unlabeledData.setRelationName(labelName);
-				trainDatasets.put(labelName, unlabeledData);	
+				rawTrainDatasets.put(labelName, unlabeledData);	
 			}
+		}
+		return rawTrainDatasets;
+	}
+	
+	public Map<String, Instances> toWordVector(Map<String, Instances> rawTrain, StringToWordVector filter){
+		Map<String, Instances> trainDatasets = new HashMap<String, Instances>();
+		for(Map.Entry<String, Instances> entry : rawTrain.entrySet()){
+			Instances unlabeledData = null;
+			try {
+				unlabeledData = Filter.useFilter(entry.getValue(), filter);
+			} catch (Exception e) {
+				System.err.println("[Utility.toWordVector]: " + e.getMessage());
+			}
+			trainDatasets.put(entry.getKey(), unlabeledData);
 		}
 		return trainDatasets;
 	}

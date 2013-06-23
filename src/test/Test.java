@@ -2,6 +2,7 @@ package test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,5 +53,9 @@ public class Test {
 			System.out.println("Comparing " + old.get(i) + " with " + nw.get(i));
 			System.out.println(old.get(i).doubleValue() == nw.get(i).doubleValue());
 		}
+		
+		List<Integer> labelsUsed = new ArrayList<Integer>(
+				Arrays.asList(0,0,1,1,0,0,0,0,0,0,1));
+		System.out.println(labelsUsed.toString());
 	}
 }

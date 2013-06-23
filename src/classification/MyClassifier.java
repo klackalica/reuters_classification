@@ -17,21 +17,21 @@ public class MyClassifier {
 		this.clsMethod = clsMethod;
 	}
 
-	public List<Double> classify(Instances train, Instances test){
-		if(clsMethod.equals("DT")){
-			return classify(new J48(), train, test);
-		}
-		else if(clsMethod.equals("NB")){
-			return classify(new NaiveBayes(), train, test);
-		}
-		else{
-			return classify(new IBk(5), train, test);
-		}
-	}
+//	public List<Double> classify(Instances train, Instances test){
+//		if(clsMethod.equals("DT")){
+//			return classify(new J48(), train, test);
+//		}
+//		else if(clsMethod.equals("NB")){
+//			return classify(new NaiveBayes(), train, test);
+//		}
+//		else{
+//			return classify(new IBk(5), train, test);
+//		}
+//	}
 	
-	private List<Double> classify(Classifier cls, Instances train, Instances test){
+	public List<Double> classify(Classifier cls, Instances test){
 		try {
-			cls.buildClassifier(train);
+			//cls.buildClassifier(train);
 
 			// Predict labels
 			List<Double> labels = new ArrayList<Double>();
