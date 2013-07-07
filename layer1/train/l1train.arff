@@ -1,4 +1,4 @@
-@RELATION grain
+@RELATION reuters
 @ATTRIBUTE title STRING
 @ATTRIBUTE body STRING
 @DATA

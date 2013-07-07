@@ -23,7 +23,7 @@ public class Main {
 //		String clsMethod = args[1];
 //		int wordsToKeep = Integer.parseInt(args[2]);
 //		int numToSelect = Integer.parseInt(args[3]);
-		int fsMethod = 3;
+		int fsMethod = 0;
 		String clsMethod = "NB";
 		int wordsToKeep = 10000;
 		int numToSelect = 20;
@@ -57,14 +57,14 @@ public class Main {
 		Layer layer1 = null;
 		// Whether to use feature selection or not.
 		if(fsMethod != 0){
-			layer1 = new Layer(clsMethod, dh, originalTrain, new FeatureSelection(fsMethod, numToSelect));
+			layer1 = new Layer(clsMethod, dh, new FeatureSelection(fsMethod, numToSelect));
 		}
 		else{
-			layer1 = new Layer(clsMethod, dh, originalTrain);
+			layer1 = new Layer(clsMethod, dh);
 		}
-		layer1.loadTrain("layer1/train/", wordVectorfilter);
+		layer1.loadTrain("layer1/train/", "l1train.arff", wordVectorfilter);
 		//layer1.loadTrain("temp/", wordVectorfilter);
-		layer1.trainAndEvaluate();
+		layer1.trainClassifiers();
 		layer1.loadTest("layer1/test/l1test.arff", "layer1/test/l1test_rest.arff", wordVectorfilter);
 		double[] PRFlayer1 = layer1.classify();
 		
@@ -73,7 +73,7 @@ public class Main {
 		System.out.println("Precision = " + PRFlayer1[0] + "\nRecall = " + PRFlayer1[1] + "\nF1 = " + PRFlayer1[2]);
 		Utility.outputToFile("Precision = " + PRFlayer1[0] + "\nRecall = " + PRFlayer1[1] + "\nF1 = " + PRFlayer1[2]);
 
-		layer1.savePredictionsInTrainFormat("layer2/train/");
+		layer1.saveClassifiersPredictions("layer2/train/", "l2train.arff", true);
 
 		//		LibSVM svm = new LibSVM();
 		//		SelectedTag kt = new SelectedTag(0, LibSVM.TAGS_KERNELTYPE);
@@ -88,7 +88,7 @@ public class Main {
 		// ----------------------------------------------------
 
 		Layer layer2 = new Layer(clsMethod, dh);
-		layer2.loadTrain("layer2/train/");
+		layer2.loadTrain("layer2/train/", "l2train.arff", null);
 		
 		// Configure StringToWordVector for titles using the original training set
 		originalTrainRaw.deleteAttributeAt(1);		// delete body attribute
@@ -96,7 +96,7 @@ public class Main {
 		
 		layer2.addMoreFeaturesToTrain(titleWordVectorfilter, "layer1/test/l1test.arff");
 		
-		layer2.trainAndEvaluate();
+		layer2.trainClassifiers();
 		
 		Utility.outputToFile("======================= APPLY LAYER 1 TO TEST SET =======================");
 		
@@ -110,13 +110,13 @@ public class Main {
 		System.out.println("Precision = " + PRF1[0] + "\nRecall = " + PRF1[1] + "\nF1 = " + PRF1[2]);
 		Utility.outputToFile("Precision = " + PRF1[0] + "\nRecall = " + PRF1[1] + "\nF1 = " + PRF1[2]);
 		
-		layer1.savePredictionsInTestFormat("layer2/test/");
+		layer1.saveClassifiersPredictions("layer2/test/", "l2test.arff", false);
 		
 		Utility.outputToFile("======================= APPLY LAYER 2 TO TEST SET =======================");
 		
 		// Apply layer 2 to test set
 		//
-		layer2.loadTest("layer2/test/l2test.arff", "layer2/test/l2test_rest.arff");
+		layer2.loadTest("layer2/test/l2test.arff", "layer2/test/l2test_rest.arff", null);
 		layer2.addMoreFeaturesToTest(titleWordVectorfilter, "test_noclass.arff");
 		double[] PRFlayer2 = layer2.classify();
 

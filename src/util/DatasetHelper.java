@@ -39,31 +39,15 @@ public class DatasetHelper {
 		return data;
 	}
 	
-	/**
-	 * 
-	 * @param folderName - Folder containing files from which to load datasets
-	 * @return Map with (label name, dataset) entries
-	 */
-	public Map<String, Instances> loadAllDatasets(String folderName){
-		System.out.println("Loading all datasets in " + folderName + " folder.");
-		File folder = new File(folderName);
-		File[] listOfFiles = folder.listFiles();
+	public Map<String, Instances> loadAllDatasets(String filename, List<String> labels){
 		Map<String, Instances> rawTrainDatasets = new HashMap<String, Instances>();
-		for (File file : listOfFiles) {
-			if (file.isFile() && !file.getName().endsWith("_rest.arff")) {
-				Instances unlabeledData = null;
-				try {
-					// Load data.
-					unlabeledData = loadData(file.getAbsolutePath());
-				} catch (IOException e) {
-					System.err.println("[Utility.loadAllDatasets]: " + e.getMessage());
-				} catch (Exception e) {
-					System.err.println("[Utility.loadAllDatasets]: " + e.getMessage());
-				}
-				// Put (label name, unlabeledData) into the map.
-				String labelName = file.getName().split("\\.")[0];
-				//unlabeledData.setRelationName(labelName);
-				rawTrainDatasets.put(labelName, unlabeledData);	
+		for(String label : labels){
+			try {
+				Instances data = loadData(filename);
+				data.setRelationName(label);
+				rawTrainDatasets.put(label, data);
+			} catch (IOException e) {
+				System.err.println("[Utility.loadAllDatasets]: " + e.getMessage());
 			}
 		}
 		return rawTrainDatasets;
@@ -184,10 +168,9 @@ public class DatasetHelper {
 	 * 
 	 * @param labelValues - list of label values {0, 1} for each instance
 	 * @param unlabeled  - Dataset to add the label column
-	 * @param labelName - name of the label to add (e.g. earn, acq, ship, wheat...)
 	 * @return Labeled dataset
 	 */
-	public Instances labelDataset(List<Double> labelValues, Instances unlabeled, String labelName){
+	public Instances labelDataset(List<Double> labelValues, Instances unlabeled){
 		Instances labeled = new Instances(unlabeled);
 		
 		// Add label attribute/column at the end of the dataset.
