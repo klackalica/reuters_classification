@@ -1,6 +1,8 @@
 package util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import weka.attributeSelection.ASEvaluation;
@@ -19,7 +21,8 @@ public class FeatureSelection {
 	private ASEvaluation eval;
 	private ASSearch search;
 	private int numToSelect;
-	private weka.attributeSelection.AttributeSelection attsel;
+	private Map<String, weka.attributeSelection.AttributeSelection> attselMap = new HashMap<String, weka.attributeSelection.AttributeSelection>();
+	//private List<weka.attributeSelection.AttributeSelection> attsel;
 
 	public FeatureSelection(int fsMethod, int num){
 		numToSelect = num;
@@ -49,6 +52,13 @@ public class FeatureSelection {
 	public void CfsSubsetBestFirst(){
 		CfsSubsetEval eval = new CfsSubsetEval();
 		BestFirst search = new BestFirst();
+		
+//		try {
+//			search.setOptions(new String[]{"-D", "2"});
+//			System.out.println(search.getDirection());
+//		} catch (Exception e) {
+//			System.err.println("[FeatureSelection.CfsSubsetBestFirst] Error: " + e.getMessage());
+//		}
 		this.search = search;
 		this.eval = eval;
 	}
@@ -62,41 +72,66 @@ public class FeatureSelection {
 	}
 
 	/**
-	 * Performs feature selection on the original training dataset
-	 * and filters the training datasets to have these features only.
+	 * Performs feature selection on each of the training datasets
+	 * and filters them to have these features only.
 	 * 
 	 * @param trainDatasets - training datasets
 	 * @return training datasets that contained only selected features
 	 */
-	public Map<String, Instances> selectFeatures(Map<String, Instances> trainDatasets, Instances originalTrain){
-		// Do feature selection on the original training dataset
-		attsel = new weka.attributeSelection.AttributeSelection();  // package weka.attributeSelection!
-		attsel.setEvaluator(eval);
-		attsel.setSearch(search);
-		System.out.println("Selecting attributes...");
-		try {
-			attsel.SelectAttributes(originalTrain);
-			String fsResults = attsel.toResultsString();
-			Utility.outputToFile(fsResults);
-			System.out.println(fsResults);
+	public Map<String, Instances> selectFeatures(Map<String, Instances> trainDatasets){
+		Map<String, Instances> fstrainDatasets = new HashMap<String, Instances>();
+		for(Map.Entry<String, Instances> e : trainDatasets.entrySet()){
+			weka.attributeSelection.AttributeSelection attsel = new weka.attributeSelection.AttributeSelection();  // package weka.attributeSelection!
+			
+			attsel.setEvaluator(eval);
+			attsel.setSearch(search);
+			System.out.println("Selecting attributes...");
+			try {
+				attsel.SelectAttributes(e.getValue());
+				String fsResults = attsel.toResultsString();
+				Utility.outputToFile(fsResults);
+				System.out.println(fsResults);
+				
+				attselMap.put(e.getKey(), attsel);
 
-			selectedAttributes = attsel.selectedAttributes();		// obtain the attribute indices that were selected
-
-			// Keep only selected features in the training datasets.
-			Map<String, Instances> fstrainDatasets = new HashMap<String, Instances>();
-			for(Map.Entry<String, Instances> e : trainDatasets.entrySet()){
-				fstrainDatasets.put(e.getKey(), filterOutAttributes(e.getValue()));
+				// Keep only selected features in the training datasets.
+					fstrainDatasets.put(e.getKey(), filterOutAttributes(e.getValue(), e.getKey()));
+			} catch (Exception e1) {
+				System.err.println("[FeatureSelection.selectFeatures]: Error" + e1.getMessage());
 			}
-			return fstrainDatasets;
-		} catch (Exception e) {
-			System.err.println("[FeatureSelection.selectFeatures]: Error" + e.getMessage());
-			return null;
 		}
+		return fstrainDatasets;
 	}
+	
+//	public Map<String, Instances> selectFeatures(Map<String, Instances> trainDatasets, Instances originalTrain){
+//		// Do feature selection on the original training dataset
+//		attsel = new weka.attributeSelection.AttributeSelection();  // package weka.attributeSelection!
+//		attsel.setEvaluator(eval);
+//		attsel.setSearch(search);
+//		System.out.println("Selecting attributes...");
+//		try {
+//			attsel.SelectAttributes(originalTrain);
+//			String fsResults = attsel.toResultsString();
+//			Utility.outputToFile(fsResults);
+//			System.out.println(fsResults);
+//
+//			selectedAttributes = attsel.selectedAttributes();		// obtain the attribute indices that were selected
+//
+//			// Keep only selected features in the training datasets.
+//			Map<String, Instances> fstrainDatasets = new HashMap<String, Instances>();
+//			for(Map.Entry<String, Instances> e : trainDatasets.entrySet()){
+//				fstrainDatasets.put(e.getKey(), filterOutAttributes(e.getValue()));
+//			}
+//			return fstrainDatasets;
+//		} catch (Exception e) {
+//			System.err.println("[FeatureSelection.selectFeatures]: Error" + e.getMessage());
+//			return null;
+//		}
+//	}
 
-	public Instances filterOutAttributes(Instances data){
+	public Instances filterOutAttributes(Instances data, String labelName){
 		try {
-			return attsel.reduceDimensionality(data);
+			return attselMap.get(labelName).reduceDimensionality(data);
 		} catch (Exception e1) {
 			System.err.println("[FeatureSelection.filterOutAttributes] Error: " + e1.getMessage());
 			return null;

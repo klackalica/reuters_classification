@@ -19,17 +19,16 @@ public class Main {
 					"veg-oil", "soybean", "livestock"));
 
 	public static void main(String[] args) throws Exception {
-		int fsMethod = Integer.parseInt(args[0]);
-		String clsMethod = args[1];
-		int wordsToKeep = Integer.parseInt(args[2]);
-		int numToSelect = Integer.parseInt(args[3]);
-		String outFilename = fsMethod+"-"+clsMethod+"-"+wordsToKeep+"-"+numToSelect+".txt";
+//		int fsMethod = Integer.parseInt(args[0]);
+//		String clsMethod = args[1];
+//		int wordsToKeep = Integer.parseInt(args[2]);
+//		int numToSelect = Integer.parseInt(args[3]);
+		int fsMethod = 3;
+		String clsMethod = "NB";
+		int wordsToKeep = 10000;
+		int numToSelect = 20;
+		String outFilename = fsMethod+"-"+clsMethod+"-"+wordsToKeep+"-"+numToSelect+"-" + ".txt";
 		Utility.filename = outFilename;
-//		int fsMethod = 0;
-//		String clsMethod = "NB";
-//		int wordsToKeep = 5000;
-//		int numToSelect = 400;
-//		Utility.filename = "test.txt";
 		Utility.ensureFileExists(outFilename);
 
 		System.out.println("fsMethod " + fsMethod 
@@ -49,11 +48,6 @@ public class Main {
 		List<String> possibleLabels = new ArrayList<String>(labelsUsed);
 		possibleLabels.add("other");
 		dh.labelDataset("alltrain_noclass_rest.arff", originalTrain, "reuters", possibleLabels);
-
-		//		Instances rawTrain = dh.loadData("alltrain_class.arff");
-		//		StringToWordVector filter = dh.createWordVectorFilter(rawTrain);
-		//		Instances originalTrain = Filter.useFilter(rawTrain, filter);
-		//		originalTrain.setClassIndex(0);
 
 		Utility.outputToFile("======================= LAYER 1 =======================");
 
@@ -95,6 +89,13 @@ public class Main {
 
 		Layer layer2 = new Layer(clsMethod, dh);
 		layer2.loadTrain("layer2/train/");
+		
+		// Configure StringToWordVector for titles using the original training set
+		originalTrainRaw.deleteAttributeAt(1);		// delete body attribute
+		StringToWordVector titleWordVectorfilter = dh.createWordVectorFilter(originalTrainRaw);
+		
+		layer2.addMoreFeaturesToTrain(titleWordVectorfilter, "layer1/test/l1test.arff");
+		
 		layer2.trainAndEvaluate();
 		
 		Utility.outputToFile("======================= APPLY LAYER 1 TO TEST SET =======================");
@@ -116,6 +117,7 @@ public class Main {
 		// Apply layer 2 to test set
 		//
 		layer2.loadTest("layer2/test/l2test.arff", "layer2/test/l2test_rest.arff");
+		layer2.addMoreFeaturesToTest(titleWordVectorfilter, "test_noclass.arff");
 		double[] PRFlayer2 = layer2.classify();
 
 		System.out.println("Layer 2 applied to test set");

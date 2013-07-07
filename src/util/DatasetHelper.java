@@ -62,7 +62,7 @@ public class DatasetHelper {
 				}
 				// Put (label name, unlabeledData) into the map.
 				String labelName = file.getName().split("\\.")[0];
-				unlabeledData.setRelationName(labelName);
+				//unlabeledData.setRelationName(labelName);
 				rawTrainDatasets.put(labelName, unlabeledData);	
 			}
 		}

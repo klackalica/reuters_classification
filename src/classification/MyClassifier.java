@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import weka.classifiers.Classifier;
-import weka.classifiers.bayes.NaiveBayes;
-import weka.classifiers.lazy.IBk;
-import weka.classifiers.trees.J48;
 import weka.core.Instances;
 
 public class MyClassifier {
@@ -37,6 +34,11 @@ public class MyClassifier {
 			List<Double> labels = new ArrayList<Double>();
 			for (int i = 0; i < test.numInstances(); i++) {
 				double predicted = cls.classifyInstance(test.instance(i));
+				
+				if(predicted != 0.0 && predicted != 1.0){
+					System.out.println("****************************** predicted: " + predicted);
+					System.out.println(test.instance(i).classIsMissing());
+				}
 				labels.add(predicted);
 			}
 			return labels;
