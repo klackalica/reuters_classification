@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import util.AugmentInput;
 import util.DatasetHelper;
 import util.FeatureSelection;
 import util.Utility;
@@ -21,23 +22,25 @@ public class Layer {
 					"veg-oil", "soybean", "livestock"));
 
 	private Map<String, Instances> train = null;
-	private Instances unlabeledTest = null;
+	private Map<String, Instances> test = new HashMap<String, Instances>();
+	//private Instances unlabeledTest = null;
 	private Map<String, List<Double>> testLabels = null;
 	private Map<String, List<Double>> predictedLabels = null;
 	private FeatureSelection fs = null;
 	private DatasetHelper dh = null;
-	private MyClassifier myCls = null;
-	//private Map<String, Classifier> classifiers = new HashMap<String, Classifier>(); 
+	private MyClassifier myCls = null; 
 
 	public Layer(String clsMethod, DatasetHelper dh){
 		this.dh = dh;
 		myCls = new MyClassifier(clsMethod);
 	}
-
-	public Layer(String clsMethod, DatasetHelper dh, FeatureSelection fs){
-		this.dh = dh;
+	
+	public Map<String, Instances> getTestDataset(){
+		return test;
+	}
+	
+	public void setFeatureSelection(FeatureSelection fs){
 		this.fs = fs;
-		myCls = new MyClassifier(clsMethod);
 	}
 
 	/**
@@ -58,21 +61,31 @@ public class Layer {
 	}
 
 	public void loadTest(String featuresFilepath, String labelsFilepath, StringToWordVector filter){
-		// Load test dataset. So far, it's unlabelled.
 		try {
-			Instances rawTest = dh.loadData(featuresFilepath);
+			Instances unlabeledTest = dh.loadData(featuresFilepath);
 			if(filter != null){
-				unlabeledTest = Filter.useFilter(rawTest, filter);
-			}
-			else{
-				unlabeledTest = rawTest;
+				unlabeledTest = Filter.useFilter(unlabeledTest, filter);
 			}
 			// Load true labels of the test dataset from a file and transform them into a map representation
 			// where each entry is (label name, binary list of label values of each test instance).
 			List<String> testLabelsFromFile = dh.loadLabelFile(labelsFilepath);
 			testLabels = dh.formatTestLabels(labelsUsed, testLabelsFromFile);
+			
+			for(String labelName : labelsUsed){
+				Instances labeledTest = dh.labelDataset(testLabels.get(labelName), unlabeledTest);
+				if(fs != null){
+					labeledTest = fs.filterOutAttributes(labeledTest, labelName);
+				}
+				test.put(labelName, labeledTest);
+			}
 		} catch (Exception e) {
 			System.err.println("[Layer.loadTest] Error: " + e.getMessage());
+		}
+	}
+	
+	public void performFeatureSelection(){
+		if(fs != null){
+			train = fs.selectFeatures(train);
 		}
 	}
 
@@ -81,23 +94,16 @@ public class Layer {
 	 * evaluate the performance of every classifier using cross-validation.
 	 */
 	public void trainClassifiers(){
-		if(fs != null){
-			train = fs.selectFeatures(train);
-		}
 		myCls.trainClassifiers(train);
 		//myCls.crossValidateAll(train);
 	}
 
-
-
 	public double[] classify(){
 		predictedLabels = new HashMap<String, List<Double>>();
-		for (Map.Entry<String, Instances> entry : train.entrySet()) {
+		for (Map.Entry<String, Instances> entry : test.entrySet()) {
 			String labelName = entry.getKey();
-			Instances labeledTest = dh.labelDataset(testLabels.get(labelName), unlabeledTest);
-			if(fs != null){
-				labeledTest = fs.filterOutAttributes(labeledTest, labelName);
-			}
+			Instances labeledTest = entry.getValue();
+			
 			int pos = 0;
 			for(int i = 0; i < labeledTest.numInstances(); i++){
 				if(labeledTest.instance(i).classValue() == 1.0) pos++;
@@ -145,64 +151,7 @@ public class Layer {
 			}
 		}
 	}
-/*
-	public void savePredictionsInTrainFormat(String folder, String filename){
-		List<List<Integer>> featuresToSave = formatFeaturesToSave();
 
-		StringBuilder attributesHeader = new StringBuilder();
-		for(String labelName : labelsUsed){
-			attributesHeader.append("@ATTRIBUTE " + labelName + "_class {0,1}\n");
-		}
-
-		// Features part
-		Utility.ensureFileExists(folder + filename);
-		StringBuilder arff = new StringBuilder();
-		arff.append("@RELATION reuters\n");
-		arff.append(attributesHeader.toString());
-		arff.append("@DATA\n");
-
-		String line;
-		for(int i = 0; i < featuresToSave.size(); i++){
-			line = featuresToSave.get(i).toString();
-			arff.append(line.substring(1, line.length()-1)+"\n");
-		}
-		Utility.toArffFile(arff.toString(), folder + filename);
-
-		// Class values part
-		for(String labelName : labelsUsed){
-			Utility.ensureFileExists(folder + labelName+"_rest.arff");
-
-			StringBuilder lb = new StringBuilder();
-			for(double d : testLabels.get(labelName)){
-				lb.append(d + "\n");
-			}
-			Utility.toLabelFile(lb.toString(), folder + labelName + "_rest.arff");
-		}
-	}
-
-	public void savePredictionsInTestFormat(String folder, String filename){
-		List<List<Integer>> featuresToSave = formatFeaturesToSave();
-
-		StringBuilder attributesHeader = new StringBuilder();
-		for(String labelName : labelsUsed){
-			attributesHeader.append("@ATTRIBUTE " + labelName + "_class {0,1}\n");
-		}
-
-		// Features part
-		StringBuilder arff = new StringBuilder();
-		arff.append("@RELATION reuters\n");
-		arff.append(attributesHeader.toString());
-		arff.append("@DATA\n");
-
-		String line;
-		for(int i = 0; i < featuresToSave.size(); i++){
-			line = featuresToSave.get(i).toString();
-			arff.append(line.substring(1, line.length()-1)+"\n");
-		}
-
-		Utility.toArffFile(arff.toString(), folder + filename);
-	}
-*/
 	private List<List<Integer>> formatFeaturesToSave(){
 		List<List<Integer>> featuresToSave = new ArrayList<List<Integer>>();
 		// Initialise outInstances. Size is the number of instances that were in test set.
@@ -221,46 +170,15 @@ public class Layer {
 		return featuresToSave;
 	}
 
-	public void addMoreFeaturesToTrain(StringToWordVector filter, String filepath) throws Exception {
-		Instances data = dh.loadData(filepath);
-		data.deleteAttributeAt(1);		// remove body attribute
-		Instances titleData = Filter.useFilter(data, filter);
-		for(Map.Entry<String, Instances> e : train.entrySet()){
-			Instances copy = new Instances(titleData);
-			Instances t = e.getValue();
-			for(int i = 0; i < t.numAttributes(); i++){
-				System.out.println("Insert attribute at " + copy.numAttributes() + " " + t.attribute(i).name());
-				copy.insertAttributeAt(t.attribute(i), copy.numAttributes());
-				System.out.println("After insertAt num attr is " + copy.numAttributes());
-				// Add label values to the dataset.
-				for (int j = 0; j < copy.numInstances(); j++) {
-					double d = t.instance(j).value(i);
-					copy.instance(j).setValue(copy.numAttributes()-1, d);
-				}
-			}
-			// Set label/class index
-			copy.setClassIndex(copy.numAttributes()-1);
-			train.put(e.getKey(), copy);
+	public void augmentTrain(AugmentInput augmentInput) throws Exception {
+		if(augmentInput != null){
+			train = augmentInput.augment(train);
 		}
 	}
 
-	public void addMoreFeaturesToTest(StringToWordVector filter, String filepath) throws Exception {
-		Instances data = dh.loadData(filepath);
-		data.deleteAttributeAt(1);		// remove body attribute
-		Instances titleData = Filter.useFilter(data, filter);
-		//System.out.println(titleData);
-
-		for(int i = 0; i < unlabeledTest.numAttributes(); i++){
-			titleData.insertAttributeAt(unlabeledTest.attribute(i), titleData.numAttributes());
-
-			// Add label values to the dataset.
-			for (int j = 0; j < titleData.numInstances(); j++) {
-				double d = unlabeledTest.instance(j).value(i);
-				titleData.instance(j).setValue(titleData.numAttributes()-1, d);
-			}
+	public void augmentTest(AugmentInput augmentInput) throws Exception {
+		if(augmentInput != null){
+			test = augmentInput.augment(test);
 		}
-		unlabeledTest = titleData;
-		//System.out.println(unlabeledTest);
-		System.out.println("num attr = " + unlabeledTest.numAttributes());
 	}
 }

@@ -69,12 +69,11 @@ public class FeatureSelection {
 
 			attsel.setEvaluator(eval);
 			attsel.setSearch(search);
-			System.out.println("Selecting attributes...");
+			Utility.outputDual("Selecting attributes for " + e.getKey() + "...");
 			try {
 				attsel.SelectAttributes(e.getValue());
 				String fsResults = attsel.toResultsString();
-				Utility.outputToFile(fsResults);
-				System.out.println(fsResults);
+				Utility.outputDual(fsResults);
 
 				attselMap.put(e.getKey(), attsel);
 

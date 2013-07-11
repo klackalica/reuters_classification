@@ -53,6 +53,11 @@ public class Utility {
 		return new double[]{sumP/numInstances, sumR/numInstances, sumF/numInstances};
 	}
 
+	public static void outputDual(String text){
+		outputToFile(text);
+		System.out.println(text);
+	}
+	
 	public static void outputToFile(String text){
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename, true)));

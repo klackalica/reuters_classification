@@ -95,8 +95,7 @@ public class MyClassifier {
 			sb.append(evalAll.toMatrixString("Confusion Matrix"));
 			sb.append("\n");
 
-			System.out.println(sb.toString());
-			Utility.outputToFile(sb.toString());
+			Utility.outputDual(sb.toString());
 		} catch (Exception e) {
 			System.err.println("[MyClassifier.crossValidateData] Error: " + e.getMessage());
 		}
