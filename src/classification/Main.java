@@ -11,6 +11,7 @@ import util.DatasetHelper;
 import util.FeatureSelection;
 import util.Utility;
 import weka.core.Instances;
+import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class Main {
@@ -25,7 +26,7 @@ public class Main {
 		//		String clsMethod = args[1];
 		//		int wordsToKeep = Integer.parseInt(args[2]);
 		//		int numToSelect = Integer.parseInt(args[3]);
-		int fsMethod = 3;
+		int fsMethod = 2;
 		int augmentMethod = 2;
 		String clsMethod = "NB";
 		int wordsToKeep = 10000;
@@ -49,10 +50,10 @@ public class Main {
 		// Configure StringToWordVector using all words from the training set
 		Instances originalTrainRaw = dh.loadData("alltrain_noclass.arff");
 		StringToWordVector wordVectorfilter = dh.createWordVectorFilter(originalTrainRaw);
-//		Instances originalTrain = Filter.useFilter(originalTrainRaw, wordVectorfilter);
-//		List<String> possibleLabels = new ArrayList<String>(labelsUsed);
-//		possibleLabels.add("other");
-//		dh.labelDataset("alltrain_noclass_rest.arff", originalTrain, "reuters", possibleLabels);
+		Instances originalTrain = Filter.useFilter(originalTrainRaw, wordVectorfilter);
+		List<String> possibleLabels = new ArrayList<String>(labelsUsed);
+		possibleLabels.add("other");
+		dh.labelDataset("alltrain_noclass_rest.arff", originalTrain, "reuters", possibleLabels);
 
 		// Set up layer 1
 		// ----------------------------------------------------
@@ -63,7 +64,7 @@ public class Main {
 			layer1.setFeatureSelection(new FeatureSelection(fsMethod, numToSelect));
 		}
 		layer1.loadTrain("layer1/train/", "l1train.arff", wordVectorfilter);
-		layer1.performFeatureSelection();
+		layer1.performFeatureSelectionPerLabel();
 		layer1.trainClassifiers();
 		layer1.loadTest("layer1/test/l1test.arff", "layer1/test/l1test_rest.arff", wordVectorfilter);
 		double[] PRFlayer1 = layer1.classify();

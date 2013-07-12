@@ -26,20 +26,20 @@ public class AugmentTitle implements AugmentInput{
 			Instances titleData = Filter.useFilter(data, filter);
 
 			for(Map.Entry<String, Instances> e : datasets.entrySet()){
-				Instances copy = new Instances(titleData);
-				Instances t = e.getValue();
-				for(int i = 0; i < t.numAttributes(); i++){
-					copy.insertAttributeAt(t.attribute(i), copy.numAttributes());
+				Instances combined = new Instances(titleData);
+				Instances toAdd = e.getValue();
+				for(int i = 0; i < toAdd.numAttributes(); i++){
+					combined.insertAttributeAt(toAdd.attribute(i), combined.numAttributes());
 
 					// Add attribute values to the dataset.
-					for (int j = 0; j < copy.numInstances(); j++) {
-						double d = t.instance(j).value(i);
-						copy.instance(j).setValue(copy.numAttributes()-1, d);
+					for (int j = 0; j < combined.numInstances(); j++) {
+						double d = toAdd.instance(j).value(i);
+						combined.instance(j).setValue(combined.numAttributes()-1, d);
 					}
 				}
 				// Set label/class index
-				copy.setClassIndex(copy.numAttributes()-1);
-				datasets.put(e.getKey(), copy);
+				combined.setClassIndex(combined.numAttributes()-1);
+				datasets.put(e.getKey(), combined);
 			}
 			return datasets;
 		}

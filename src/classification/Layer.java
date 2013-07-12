@@ -83,7 +83,7 @@ public class Layer {
 		}
 	}
 	
-	public void performFeatureSelection(){
+	public void performFeatureSelectionPerLabel(){
 		if(fs != null){
 			train = fs.selectFeatures(train);
 		}

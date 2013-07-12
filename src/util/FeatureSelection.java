@@ -65,25 +65,31 @@ public class FeatureSelection {
 	public Map<String, Instances> selectFeatures(Map<String, Instances> trainDatasets){
 		Map<String, Instances> fstrainDatasets = new HashMap<String, Instances>();
 		for(Map.Entry<String, Instances> e : trainDatasets.entrySet()){
-			weka.attributeSelection.AttributeSelection attsel = new weka.attributeSelection.AttributeSelection();  // package weka.attributeSelection!
-
-			attsel.setEvaluator(eval);
-			attsel.setSearch(search);
-			Utility.outputDual("Selecting attributes for " + e.getKey() + "...");
-			try {
-				attsel.SelectAttributes(e.getValue());
-				String fsResults = attsel.toResultsString();
-				Utility.outputDual(fsResults);
-
-				attselMap.put(e.getKey(), attsel);
-
-				// Keep only selected features in the training datasets.
-				fstrainDatasets.put(e.getKey(), filterOutAttributes(e.getValue(), e.getKey()));
-			} catch (Exception e1) {
-				System.err.println("[FeatureSelection.selectFeatures]: Error" + e1.getMessage());
-			}
+			// Keep only selected features in the training datasets.
+			fstrainDatasets.put(e.getKey(), selectFeaturesOnDataset(e.getValue(), e.getKey()));
 		}
 		return fstrainDatasets;
+	}
+
+	public Instances selectFeaturesOnDataset(Instances dataset, String name){
+		weka.attributeSelection.AttributeSelection attsel = new weka.attributeSelection.AttributeSelection();  // package weka.attributeSelection!
+
+		attsel.setEvaluator(eval);
+		attsel.setSearch(search);
+		Utility.outputDual("Selecting attributes for " + name + "...");
+		try {
+			attsel.SelectAttributes(dataset);
+			String fsResults = attsel.toResultsString();
+			Utility.outputDual(fsResults);
+
+			attselMap.put(name, attsel);
+
+			// Keep only selected features in the training datasets.
+			return filterOutAttributes(dataset, name);
+		} catch (Exception e1) {
+			System.err.println("[FeatureSelection.selectFeaturesOnDataset]: Error" + e1.getMessage());
+			return null;
+		}
 	}
 
 	public Instances filterOutAttributes(Instances data, String labelName){
