@@ -13,18 +13,36 @@ import java.util.Map;
 
 import weka.core.Attribute;
 import weka.core.Instances;
+import weka.core.SelectedTag;
+import weka.core.stemmers.SnowballStemmer;
+import weka.core.tokenizers.NGramTokenizer;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class DatasetHelper {
 	
 	private int wordsToKeep = 5000;
+	private int minTermFreq = 1;
+	private boolean useStopList = false;
+	private int nGrams = 1;
+	private  boolean useStemmer = false;
+	private boolean normalizeDocLength = false;
 	private List<String> binaryValues = new ArrayList<String>(
 			Arrays.asList("1.0", "0.0"));
 	
-	public DatasetHelper(int wordsToKeep){
+//	public DatasetHelper(int wordsToKeep){
+//		this.wordsToKeep = wordsToKeep;
+//	}
+	
+	public DatasetHelper(int wordsToKeep, int minTermFreq, boolean useStopList, int nGrams, boolean useStemmer, boolean normalizeDocLength) {
 		this.wordsToKeep = wordsToKeep;
+		this.minTermFreq = minTermFreq;
+		this.useStopList = useStopList;
+		this.nGrams = nGrams;
+		this.useStemmer = useStemmer;
+		this.normalizeDocLength = normalizeDocLength;
 	}
+	
 	/**
 	 * Load a dataset from a specified file.
 	 * 
@@ -189,13 +207,55 @@ public class DatasetHelper {
 		return labeled;
 	}
 
+//	public StringToWordVector createWordVectorFilter(Instances data){
+//		try {
+//			StringToWordVector filter = new StringToWordVector();
+//			filter.setLowerCaseTokens(true);
+//			filter.setWordsToKeep(wordsToKeep);
+//			filter.setIDFTransform(true);
+//			filter.setInputFormat(data);
+//			return filter;
+//		} catch (IOException e) {
+//			System.err.println("[DatasetHelper.createWordVectorFilter]: " + e.getMessage());
+//			return null;
+//		}
+//		catch (Exception e) {
+//			System.err.println("[DatasetHelper.createWordVectorFilter]: " + e.getMessage());
+//			return null;
+//		}	
+//	}
+	
 	public StringToWordVector createWordVectorFilter(Instances data){
 		try {
-			StringToWordVector filter = new StringToWordVector();
-			filter.setLowerCaseTokens(true);
-			filter.setWordsToKeep(wordsToKeep);
-			filter.setIDFTransform(true);
-			filter.setInputFormat(data);
+			// Set the tokenizer
+			NGramTokenizer tokenizer = new NGramTokenizer();
+			tokenizer.setNGramMinSize(1);
+			tokenizer.setNGramMaxSize(nGrams);
+			tokenizer.setDelimiters("\\W");
+	
+
+		    /* Apply Filters */
+		    StringToWordVector filter = new StringToWordVector();
+		    
+		    //normalize or not
+		    if (normalizeDocLength)
+		    	filter.setNormalizeDocLength(new SelectedTag(StringToWordVector.FILTER_NORMALIZE_ALL, StringToWordVector.TAGS_FILTER));
+		    
+		    filter.setLowerCaseTokens(true);
+		    filter.setUseStoplist(useStopList);
+		    //filter.setTokenizer(new AlphabeticTokenizer());
+		    		   
+			if (useStemmer)
+		    {
+		    	SnowballStemmer stemmer = new SnowballStemmer();
+		    	filter.setStemmer(stemmer); // constant set to "english"
+		    }
+			
+		    filter.setMinTermFreq(minTermFreq);
+		    filter.setWordsToKeep(wordsToKeep);
+		    filter.setTokenizer(tokenizer);
+		    filter.setInputFormat(data);
+			
 			return filter;
 		} catch (IOException e) {
 			System.err.println("[DatasetHelper.createWordVectorFilter]: " + e.getMessage());

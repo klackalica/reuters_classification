@@ -26,26 +26,37 @@ public class Main {
 		//		String clsMethod = args[1];
 		//		int wordsToKeep = Integer.parseInt(args[2]);
 		//		int numToSelect = Integer.parseInt(args[3]);
-		int fsMethod = 2;
-		int augmentMethod = 2;
+		int fsMethod = 3; // 0 no feature selection 3 - gain ration ranker search
+		int augmentMethod = 1;
 		String clsMethod = "NB";
 		int wordsToKeep = 10000;
-		int numToSelect = 20;
-		String outFilename = fsMethod+"-"+clsMethod+"-"+wordsToKeep+"-"+numToSelect+"-"+augmentMethod+".txt";
+		int numToSelect = 20; // with fsMethod 3
+		int minTermFreq = 1;
+		int nGrams = 1; // set to 1 to not use nGrams
+		boolean useStopList = false;
+		boolean useStemmer = false;
+		boolean normalizeDocLength = false;
+		
+		String outFilename = fsMethod+"-"+clsMethod+"-"+wordsToKeep+"-"+numToSelect+"-" +augmentMethod
+				+ minTermFreq+"-stopList-"+useStopList +"-"+nGrams+"Grams"+ "-stemmer-"+ useStemmer +"-normalizeDocLength-" + normalizeDocLength +".txt";
 		
 		Utility.filename = outFilename;
 		Utility.ensureFileExists(outFilename);
 
 		Utility.outputDual("fsMethod " + fsMethod 
 				+ "\nclsMethod " + clsMethod 
-				+ "\nwordsToKeep " + wordsToKeep 
-				+ "\nnumToSelect " + numToSelect
-				+ "\naugmentMethod " + augmentMethod
+				+ "\nwordsToKeep " 	+ wordsToKeep 
+				+ "\nnumToSelect " + numToSelect 
+				+ "\nminTermFreq " + minTermFreq
+				+ "\nuseStopList "+ useStopList
+				+ "\nnGarms "+ nGrams
+				+ "\nuseStemmer "+ useStemmer
+				+ "\nnormalizeDocLength "+ normalizeDocLength
 				+ "\noutfile " + outFilename);
 
 		long startTime = System.currentTimeMillis();
 
-		DatasetHelper dh = new DatasetHelper(wordsToKeep);
+		DatasetHelper dh = new DatasetHelper(wordsToKeep, minTermFreq, useStopList, nGrams, useStemmer, normalizeDocLength);
 
 		// Configure StringToWordVector using all words from the training set
 		Instances originalTrainRaw = dh.loadData("alltrain_noclass.arff");

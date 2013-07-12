@@ -1,15 +1,11 @@
 package test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import util.DatasetHelper;
 import util.FeatureSelection;
-import util.Utility;
 import weka.attributeSelection.BestFirst;
 import weka.attributeSelection.CfsSubsetEval;
 import weka.core.Instances;
@@ -17,7 +13,7 @@ import weka.core.Instances;
 public class Test {
 
 	public static void main(String[] args) throws Exception{
-		DatasetHelper dh = new DatasetHelper(5000);
+		DatasetHelper dh = new DatasetHelper(5000, 1, false, 1, false, false);
 		Instances data = dh.loadData("for_testing.arff");
 		data.setClassIndex(4);
 		FeatureSelection fs = new FeatureSelection(2, 500);
