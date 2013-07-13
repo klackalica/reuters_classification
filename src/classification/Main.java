@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import util.AugmentFSTitle;
 import util.AugmentInput;
 import util.AugmentL1Features;
 import util.AugmentTitle;
@@ -27,7 +28,7 @@ public class Main {
 		//		int wordsToKeep = Integer.parseInt(args[2]);
 		//		int numToSelect = Integer.parseInt(args[3]);
 		int fsMethod = 3; // 0 no feature selection 3 - gain ration ranker search
-		int augmentMethod = 1;
+		int augmentMethod = 3;	// 2 (keep L1 features) doesn't work yet. Use 1 (add titles) or 3 (FS on titles before adding them)
 		String clsMethod = "NB";
 		int wordsToKeep = 10000;
 		int numToSelect = 20; // with fsMethod 3
@@ -35,7 +36,7 @@ public class Main {
 		int nGrams = 1; // set to 1 to not use nGrams
 		boolean useStopList = false;
 		boolean useStemmer = false;
-		boolean normalizeDocLength = false;
+		boolean normalizeDocLength = true;
 		
 		String outFilename = fsMethod+"-"+clsMethod+"-"+wordsToKeep+"-"+numToSelect+"-" +augmentMethod
 				+ minTermFreq+"-stopList-"+useStopList +"-"+nGrams+"Grams"+ "-stemmer-"+ useStemmer +"-normalizeDocLength-" + normalizeDocLength +".txt";
@@ -71,8 +72,10 @@ public class Main {
 		Utility.outputDual("======================= LAYER 1 =======================");
 
 		Layer layer1 = new Layer(clsMethod, dh);
+		FeatureSelection fs = null;
 		if(fsMethod != 0){
-			layer1.setFeatureSelection(new FeatureSelection(fsMethod, numToSelect));
+			fs = new FeatureSelection(fsMethod, numToSelect);
+			layer1.setFeatureSelection(fs);
 		}
 		layer1.loadTrain("layer1/train/", "l1train.arff", wordVectorfilter);
 		layer1.performFeatureSelectionPerLabel();
@@ -103,6 +106,9 @@ public class Main {
 		else if (augmentMethod == 2){
 			augmentInput1 = new AugmentL1Features(layer1.getTestDataset());
 		}
+		else if(augmentMethod == 3){
+			augmentInput1 = new AugmentFSTitle("layer1/test/l1test.arff", "layer1/test/l1test_nicerest.arff", dh, titleWordVectorfilter, possibleLabels);
+		}
 		layer2.augmentTrain(augmentInput1);	
 		layer2.trainClassifiers();
 
@@ -128,6 +134,9 @@ public class Main {
 		}
 		else if (augmentMethod == 2){
 			augmentInput2 = new AugmentL1Features(layer1.getTestDataset());
+		}
+		else if(augmentMethod == 3){
+			augmentInput1 = new AugmentFSTitle("test_noclass.arff", "test_noclass_nicerest.arff", dh, titleWordVectorfilter, possibleLabels);
 		}
 		layer2.loadTest("layer2/test/l2test.arff", "layer2/test/l2test_rest.arff", null);		
 		layer2.augmentTest(augmentInput2);

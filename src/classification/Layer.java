@@ -23,7 +23,6 @@ public class Layer {
 
 	private Map<String, Instances> train = null;
 	private Map<String, Instances> test = new HashMap<String, Instances>();
-	//private Instances unlabeledTest = null;
 	private Map<String, List<Double>> testLabels = null;
 	private Map<String, List<Double>> predictedLabels = null;
 	private FeatureSelection fs = null;
