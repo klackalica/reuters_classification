@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +54,37 @@ public class Utility {
 		return new double[]{sumP/numInstances, sumR/numInstances, sumF/numInstances};
 	}
 
+	public static Map<String, FPFN> labelsFPFN(Map<String, List<Double>> trueLabels, Map<String, List<Double>> predictedLabels){
+		int numInstances = trueLabels.get("earn").size();
+		
+		// Initialise map
+		Map<String, FPFN> labelsFPFN = new HashMap<String, FPFN>();
+		for(String labelName : trueLabels.keySet()){
+			labelsFPFN.put(labelName, new FPFN(labelName));
+		}
+		
+		for(int i = 0; i < numInstances; i++){
+			double trueLab = 0;
+			double predictedLab = 0;
+			String labelName = null;
+
+			for(Map.Entry<String, List<Double>> e : trueLabels.entrySet()){
+				labelName = e.getKey();
+				trueLab = e.getValue().get(i);		// true label value of instance i for labelName
+				predictedLab = predictedLabels.get(labelName).get(i);
+				
+				if(trueLab == 1.0 && predictedLab == 0.0){
+					labelsFPFN.get(labelName).incrementFN();
+				}
+				
+				if(trueLab == 0.0 && predictedLab == 1.0){
+					labelsFPFN.get(labelName).incrementFP();
+				}
+			}
+		}
+		return labelsFPFN;
+	}
+	
 	public static void outputDual(String text){
 		outputToFile(text);
 		System.out.println(text);

@@ -22,7 +22,7 @@ public class AugmentFSTitle implements AugmentInput{
 		this.labelPath = labelPath;
 		this.dh = dh;
 		this.filter = filter;
-		this.fs = new FeatureSelection(2, 1000);
+		this.fs = new FeatureSelection(3, 2000);
 		this.possibleLabels = possibleLabels;
 	}
 	

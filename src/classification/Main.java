@@ -23,22 +23,27 @@ public class Main {
 					"veg-oil", "soybean", "livestock"));
 
 	public static void main(String[] args) throws Exception {
-		//		int fsMethod = Integer.parseInt(args[0]);
-		//		String clsMethod = args[1];
-		//		int wordsToKeep = Integer.parseInt(args[2]);
-		//		int numToSelect = Integer.parseInt(args[3]);
+//		int fsMethod = Integer.parseInt(args[0]);
+//		String clsMethod = args[1];
+//		int augmentMethod = Integer.parseInt(args[2]);
+//		int wordsToKeep = Integer.parseInt(args[3]);
+//		int numToSelect = Integer.parseInt(args[4]);
+//		boolean useStopList = Boolean.parseBoolean(args[5]);
+//		boolean useStemmer = Boolean.parseBoolean(args[6]);
+//		boolean normalizeDocLength = Boolean.parseBoolean(args[7]);
 		int fsMethod = 3; // 0 no feature selection 3 - gain ration ranker search
-		int augmentMethod = 3;	// 2 (keep L1 features) doesn't work yet. Use 1 (add titles) or 3 (FS on titles before adding them)
+		int augmentMethod = 2;	// 2 (keep L1 features) , 1 (add titles) or 3 (FS on titles before adding them)
 		String clsMethod = "NB";
 		int wordsToKeep = 10000;
-		int numToSelect = 20; // with fsMethod 3
+		int numToSelect = 400; // with fsMethod 3
 		int minTermFreq = 1;
 		int nGrams = 1; // set to 1 to not use nGrams
-		boolean useStopList = false;
-		boolean useStemmer = false;
-		boolean normalizeDocLength = true;
-		
-		String outFilename = fsMethod+"-"+clsMethod+"-"+wordsToKeep+"-"+numToSelect+"-" +augmentMethod
+		boolean useStopList = true;
+		boolean useStemmer = true;
+		boolean normalizeDocLength = false;
+	
+//		String outFilename = "test_out.txt";
+		String outFilename = fsMethod+"-"+clsMethod+"-"+wordsToKeep+"-"+numToSelect+"-" +augmentMethod + "-"
 				+ minTermFreq+"-stopList-"+useStopList +"-"+nGrams+"Grams"+ "-stemmer-"+ useStemmer +"-normalizeDocLength-" + normalizeDocLength +".txt";
 		
 		Utility.filename = outFilename;
@@ -48,6 +53,7 @@ public class Main {
 				+ "\nclsMethod " + clsMethod 
 				+ "\nwordsToKeep " 	+ wordsToKeep 
 				+ "\nnumToSelect " + numToSelect 
+				+ "\naugmentMethod " + augmentMethod
 				+ "\nminTermFreq " + minTermFreq
 				+ "\nuseStopList "+ useStopList
 				+ "\nnGarms "+ nGrams
@@ -136,7 +142,7 @@ public class Main {
 			augmentInput2 = new AugmentL1Features(layer1.getTestDataset());
 		}
 		else if(augmentMethod == 3){
-			augmentInput1 = new AugmentFSTitle("test_noclass.arff", "test_noclass_nicerest.arff", dh, titleWordVectorfilter, possibleLabels);
+			augmentInput2 = new AugmentFSTitle("test_noclass.arff", "test_noclass_nicerest.arff", dh, titleWordVectorfilter, possibleLabels);
 		}
 		layer2.loadTest("layer2/test/l2test.arff", "layer2/test/l2test_rest.arff", null);		
 		layer2.augmentTest(augmentInput2);
@@ -144,6 +150,7 @@ public class Main {
 
 		Utility.outputDual("Layer 2 applied to test set");
 		Utility.outputDual("Precision = " + PRFlayer2[0] + "\nRecall = " + PRFlayer2[1] + "\nF1 = " + PRFlayer2[2]);
+		layer2.labelsFPFN();
 
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;

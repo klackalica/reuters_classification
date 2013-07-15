@@ -8,6 +8,7 @@ import java.util.Map;
 
 import util.AugmentInput;
 import util.DatasetHelper;
+import util.FPFN;
 import util.FeatureSelection;
 import util.Utility;
 import weka.core.Instances;
@@ -113,6 +114,14 @@ public class Layer {
 		}
 
 		return Utility.calcPrecisionRecall(testLabels, predictedLabels);
+	}
+	
+	public void labelsFPFN(){
+		Map<String, FPFN> labelsFPFN = Utility.labelsFPFN(testLabels, predictedLabels);
+		List<FPFN> list = new ArrayList<FPFN>(labelsFPFN.values());
+		for(FPFN fpfn : list){
+			Utility.outputDual(fpfn.toString());
+		}
 	}
 
 	public void saveClassifiersPredictions(String folder, String filename, boolean doClassValues){
